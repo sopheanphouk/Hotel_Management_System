@@ -1,5 +1,9 @@
-﻿using System.Windows;
+﻿
+using System;
+using System.Collections.Generic;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace Dashboard_WPF
 {
@@ -7,6 +11,7 @@ namespace Dashboard_WPF
     {
         private const double ExpandedSidebarWidth = 220;
         private const double CollapsedSidebarWidth = 64;
+
         private bool _isSidebarCollapsed;
 
         public MainWindow()
@@ -38,52 +43,125 @@ namespace Dashboard_WPF
         private void ToggleSidebarButton_Click(object sender, RoutedEventArgs e)
         {
             _isSidebarCollapsed = !_isSidebarCollapsed;
-            SidebarColumn.Width = new GridLength(_isSidebarCollapsed ? CollapsedSidebarWidth : ExpandedSidebarWidth);
 
-            var labelVisibility = _isSidebarCollapsed ? Visibility.Collapsed : Visibility.Visible;
+            SidebarColumn.Width = new GridLength(
+                _isSidebarCollapsed
+                    ? CollapsedSidebarWidth
+                    : ExpandedSidebarWidth);
+
+            Visibility labelVisibility = _isSidebarCollapsed
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+
             UserNameText.Visibility = labelVisibility;
             UserRoleText.Visibility = labelVisibility;
 
-            foreach (var label in FindNavLabels())
+            foreach (TextBlock label in FindNavLabels())
             {
                 label.Visibility = labelVisibility;
             }
         }
 
-        private System.Collections.Generic.IEnumerable<TextBlock> FindNavLabels()
+        private IEnumerable<TextBlock> FindNavLabels()
         {
-            yield return (TextBlock)((StackPanel)HomeNavItem.Content).Children[1];
-            yield return (TextBlock)((StackPanel)UserNavItem.Content).Children[1];
-            yield return (TextBlock)((StackPanel)SettingNavItem.Content).Children[1];
-            yield return (TextBlock)((StackPanel)SignOutButton.Content).Children[1];
+            foreach (RadioButton item in FindVisualChildren<RadioButton>(this))
+            {
+                if (item.Content is StackPanel panel &&
+                    panel.Children.Count > 1 &&
+                    panel.Children[1] is TextBlock label)
+                {
+                    yield return label;
+                }
+            }
+
+            if (SignOutButton.Content is StackPanel signOutPanel &&
+                signOutPanel.Children.Count > 1 &&
+                signOutPanel.Children[1] is TextBlock signOutLabel)
+            {
+                yield return signOutLabel;
+            }
+        }
+
+        private static IEnumerable<T> FindVisualChildren<T>(
+            DependencyObject parent) where T : DependencyObject
+        {
+            if (parent == null)
+                yield break;
+
+            int count = VisualTreeHelper.GetChildrenCount(parent);
+
+            for (int i = 0; i < count; i++)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(parent, i);
+
+                if (child is T result)
+                    yield return result;
+
+                foreach (T descendant in FindVisualChildren<T>(child))
+                    yield return descendant;
+            }
         }
 
         // ----- Navigation -----
 
+
         private void NavItem_Checked(object sender, RoutedEventArgs e)
         {
-            if (sender is not RadioButton { Tag: string section })
+            if (sender is not RadioButton item ||
+                item.Tag is not string section)
             {
                 return;
             }
 
-            (PageTitleText.Text, PageSubtitleText.Text) = section switch
-            {
-                "Home" => ("Home", "Welcome back, here's what's happening today."),
-                "User" => ("User", "Manage user accounts and permissions."),
-                "Setting" => ("Setting", "Configure application preferences."),
-                _ => (section, string.Empty),
-            };
+            // Update page title only when the control exists.
+            if (PageTitleText != null)
+                PageTitleText.Text = section;
 
-            // TODO: swap PageContent.Content for the real view associated with `section`,
-            // e.g. PageContent.Content = new HomeView();
+            if (PageSubtitleText != null)
+            {
+                PageSubtitleText.Text = section switch
+                {
+                    "Dashboard" => "Welcome back! Here's what's happening today.",
+                    "Room Types" => "Manage your room types and pricing.",
+                    "Rooms" => "Manage hotel rooms and room availability.",
+                    "Guests" => "Manage guest information.",
+                    "Reservations" => "Manage guest reservations.",
+                    "Bookings" => "View and manage bookings.",
+                    "Invoices" => "Manage guest invoices.",
+                    "Payments" => "Track and manage payments.",
+                    "Housekeeping" => "Manage room cleaning and status.",
+                    "Staff" => "Manage hotel staff members.",
+                    "Roles" => "Manage staff roles and permissions.",
+                    _ => string.Empty
+                };
+            }
+
+            // The content control may not be ready during initialization.
+            if (PageContent == null)
+                return;
+
+            switch (section)
+            {
+                case "Room Types":
+                    PageContent.Content = new RoomTypesView();
+                    break;
+
+                case "Dashboard":
+                    PageContent.Content = null;
+                    break;
+
+                default:
+                    PageContent.Content = null;
+                    break;
+            }
         }
+
 
         // ----- Sign out -----
 
         private void SignOutButton_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show(
+            MessageBoxResult result = MessageBox.Show(
                 "Are you sure you want to sign out?",
                 "Sign Out",
                 MessageBoxButton.YesNo,
@@ -91,7 +169,7 @@ namespace Dashboard_WPF
 
             if (result == MessageBoxResult.Yes)
             {
-                // TODO: clear session/auth state and navigate to the login window.
+                // Add login/session handling here when it is implemented.
                 Close();
             }
         }

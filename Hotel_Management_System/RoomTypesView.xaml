@@ -1,0 +1,112 @@
+﻿<UserControl x:Class="Dashboard_WPF.RoomTypesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#F5F7FB">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24">
+
+            <TextBlock Text="Room Types"
+                       FontSize="26"
+                       FontWeight="Bold"
+                       Foreground="#172554"
+                       Margin="0,0,0,6"/>
+
+            <TextBlock Text="Manage room categories, pricing, and occupancy."
+                       FontSize="13"
+                       Foreground="#64748B"
+                       Margin="0,0,0,20"/>
+
+            <Border Background="White"
+                    CornerRadius="10"
+                    Padding="20"
+                    Margin="0,0,0,20">
+
+                <StackPanel>
+                    <TextBlock Text="Add Room Type"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,16"/>
+
+                    <TextBlock Text="Type Name"/>
+                    <TextBox x:Name="TypeNameTextBox"
+                             Height="34"
+                             Margin="0,6,0,12"
+                             Padding="8"/>
+
+                    <TextBlock Text="Description"/>
+                    <TextBox x:Name="DescriptionTextBox"
+                             Height="60"
+                             Margin="0,6,0,12"
+                             Padding="8"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"/>
+
+                    <TextBlock Text="Base Price"/>
+                    <TextBox x:Name="BasePriceTextBox"
+                             Height="34"
+                             Margin="0,6,0,12"
+                             Padding="8"/>
+
+                    <TextBlock Text="Maximum Occupancy"/>
+                    <TextBox x:Name="MaxOccupancyTextBox"
+                             Height="34"
+                             Margin="0,6,0,16"
+                             Padding="8"/>
+
+                    <Button Content="Save Room Type"
+                            Height="40"
+                            Background="#2563EB"
+                            Foreground="White"
+                            FontWeight="SemiBold"
+                            BorderThickness="0"
+                            Cursor="Hand"/>
+                </StackPanel>
+            </Border>
+
+            <Border Background="White"
+                    CornerRadius="10"
+                    Padding="20">
+
+                <StackPanel>
+                    <TextBlock Text="Room Type List"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,16"/>
+
+                    <DataGrid x:Name="RoomTypesDataGrid"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              CanUserAddRows="False"
+                              MinHeight="200"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal">
+
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="ID"
+                                                Binding="{Binding RoomTypeId}"
+                                                Width="60"/>
+
+                            <DataGridTextColumn Header="Type Name"
+                                                Binding="{Binding TypeName}"
+                                                Width="*"/>
+
+                            <DataGridTextColumn Header="Description"
+                                                Binding="{Binding Description}"
+                                                Width="2*"/>
+
+                            <DataGridTextColumn Header="Base Price"
+                                                Binding="{Binding BasePrice}"
+                                                Width="120"/>
+
+                            <DataGridTextColumn Header="Max Occupancy"
+                                                Binding="{Binding MaxOccupancy}"
+                                                Width="120"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
