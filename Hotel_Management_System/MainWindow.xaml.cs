@@ -66,7 +66,7 @@ namespace Dashboard_WPF
             {
                 return;
             }
-// Test add 
+
             (PageTitleText.Text, PageSubtitleText.Text) = section switch
             {
                 "Home" => ("Home", "Welcome back, here's what's happening today."),
