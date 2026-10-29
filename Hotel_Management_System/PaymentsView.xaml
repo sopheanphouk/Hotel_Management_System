@@ -1,0 +1,82 @@
+<UserControl x:Class="Dashboard_WPF.PaymentsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#F5F7FB">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24">
+            <StackPanel>
+                <Border Background="White" CornerRadius="10" Padding="20">
+                    <StackPanel>
+                        <TextBlock Text="New Down Payment" FontSize="24" FontWeight="SemiBold" Foreground="#172554"/>
+                        <TextBlock Text="Record a down payment against an invoice." Foreground="#64748B" Margin="0,5,0,20"/>
+                        <TextBlock Text="INVOICE DETAILS" FontSize="11" Foreground="#52658A" Margin="0,0,0,12"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="16"/><ColumnDefinition Width="*"/><ColumnDefinition Width="16"/><ColumnDefinition Width="*"/><ColumnDefinition Width="16"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0"><TextBlock Text="Invoice no."/><ComboBox x:Name="InvoiceComboBox" Height="36" Margin="0,6,0,14" Padding="8"><ComboBoxItem Content="INV-0001"/><ComboBoxItem Content="INV-0002"/><ComboBoxItem Content="INV-0003"/></ComboBox></StackPanel>
+                            <StackPanel Grid.Column="2"><TextBlock Text="Guest"/><TextBox x:Name="GuestNameTextBox" Height="36" Margin="0,6,0,14" Padding="8"/></StackPanel>
+                            <StackPanel Grid.Column="4"><TextBlock Text="Booking / Reservation no."/><TextBox x:Name="BookingReferenceTextBox" Height="36" Margin="0,6,0,14" Padding="8"/></StackPanel>
+                            <StackPanel Grid.Column="6"><TextBlock Text="Payment date"/><DatePicker x:Name="PaymentDatePicker" Height="36" Margin="0,6,0,14"/></StackPanel>
+                        </Grid>
+                        <TextBlock Text="PAYMENT METHOD" FontSize="11" Foreground="#52658A" Margin="0,4,0,10"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                            <Button x:Name="CashButton" Content="Cash" Click="PaymentMethodButton_Click" Tag="Cash" Padding="18,8" Margin="0,0,8,0"/>
+                            <Button x:Name="CreditCardButton" Content="Credit card" Click="PaymentMethodButton_Click" Tag="Credit Card" Padding="18,8" Margin="0,0,8,0"/>
+                            <Button x:Name="BankTransferButton" Content="Bank transfer" Click="PaymentMethodButton_Click" Tag="Bank Transfer" Padding="18,8" Margin="0,0,8,0"/>
+                            <Button x:Name="QrPayButton" Content="QR pay" Click="PaymentMethodButton_Click" Tag="QR Pay" Padding="18,8"/>
+                        </StackPanel>
+                        <StackPanel x:Name="CardDetailsPanel" Visibility="Collapsed">
+                            <TextBlock Text="Name on card"/><TextBox x:Name="NameOnCardTextBox" Height="36" Margin="0,6,0,12" Padding="8"/>
+                            <TextBlock Text="Card number"/><TextBox x:Name="CardNumberTextBox" Height="36" Margin="0,6,0,12" Padding="8"/>
+                            <Grid Margin="0,0,0,12"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="16"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><StackPanel Grid.Column="0"><TextBlock Text="Expiry"/><TextBox x:Name="ExpiryTextBox" Height="36" Margin="0,6,0,0" Padding="8"/></StackPanel><StackPanel Grid.Column="2"><TextBlock Text="CVC"/><TextBox x:Name="CvcTextBox" Height="36" Margin="0,6,0,0" Padding="8"/></StackPanel></Grid>
+                        </StackPanel>
+                        <Border x:Name="QrDetailsPanel" Visibility="Collapsed" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16"><StackPanel Orientation="Horizontal"><Border Width="80" Height="80" Background="#E8ECF8" CornerRadius="8"><TextBlock Text="QR code" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#52658A"/></Border><TextBlock Text="Show this QR code to the guest. Mark the payment as completed once the transfer is confirmed." TextWrapping="Wrap" VerticalAlignment="Center" Margin="16,0,0,0" Foreground="#52658A"/></StackPanel></Border>
+                        <TextBlock Text="AMOUNT" FontSize="11" Foreground="#52658A" Margin="0,4,0,10"/>
+                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="16"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><StackPanel Grid.Column="0"><TextBlock Text="Down payment amount"/><TextBox x:Name="AmountTextBox" Height="36" Margin="0,6,0,14" Padding="8"/></StackPanel><StackPanel Grid.Column="2"><TextBlock Text="Status"/><ComboBox x:Name="StatusComboBox" Height="36" Margin="0,6,0,14" Padding="8"><ComboBoxItem Content="Completed"/><ComboBoxItem Content="Pending"/><ComboBoxItem Content="Failed"/></ComboBox></StackPanel></Grid>
+                        <TextBlock Text="Notes (optional)"/><TextBox x:Name="NotesTextBox" Height="70" Margin="0,6,0,20" Padding="8" AcceptsReturn="True" TextWrapping="Wrap"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"><Button Content="Cancel" Width="100" Height="38" Margin="0,0,10,0" Click="ClearButton_Click"/><Button Content="Save down payment" Width="160" Height="38" Background="#4059E8" Foreground="White" FontWeight="SemiBold" BorderThickness="0" Click="SaveButton_Click"/></StackPanel>
+                    </StackPanel>
+                </Border>
+                <Border Background="White" CornerRadius="10" Padding="20" Margin="0,20,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Receipt" FontSize="18" FontWeight="SemiBold" Foreground="#172554" Margin="0,0,0,18"/>
+                        <TextBlock Text="Invoice" Foreground="#52658A"/>
+                        <TextBlock x:Name="SummaryInvoiceText" Text="[Invoice no.]" Foreground="#172554" Margin="0,2,0,12"/>
+                        <TextBlock Text="Guest" Foreground="#52658A"/>
+                        <TextBlock x:Name="SummaryGuestText" Text="[Guest name]" Foreground="#172554" Margin="0,2,0,12"/>
+                        <Separator/>
+                        <DockPanel Margin="0,12,0,8"><TextBlock Text="Invoice total" Foreground="#52658A"/><TextBlock x:Name="SummaryTotalText" Text="0.00" DockPanel.Dock="Right"/></DockPanel>
+                        <DockPanel Margin="0,0,0,8"><TextBlock Text="Previously paid" Foreground="#52658A"/><TextBlock Text="0.00" DockPanel.Dock="Right"/></DockPanel>
+                        <Separator/>
+                        <DockPanel Margin="0,12,0,8"><TextBlock Text="Down payment" Foreground="#52658A"/><TextBlock x:Name="SummaryPaymentText" Text="0.00" DockPanel.Dock="Right"/></DockPanel>
+                        <DockPanel Margin="0,0,0,16"><TextBlock Text="Balance due" FontWeight="SemiBold"/><TextBlock x:Name="SummaryBalanceText" Text="0.00" FontWeight="SemiBold" DockPanel.Dock="Right"/><TextBlock x:Name="SummaryMessageText" Text="A receipt can be printed after the down payment is saved." TextWrapping="Wrap" Background="#EEF1FF" Padding="12" Foreground="#52658A" Margin="0,12,0,0"/></DockPanel>
+                    </StackPanel>
+                </Border>
+                <Border Background="White" CornerRadius="10" Padding="20" Margin="0,20,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Down Payment Table" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,16"/>
+                        <DataGrid ItemsSource="{Binding Payments}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" MinHeight="160">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60"/>
+                                <DataGridTextColumn Header="Invoice" Binding="{Binding InvoiceNumber}" Width="110"/>
+                                <DataGridTextColumn Header="Guest" Binding="{Binding GuestName}" Width="*"/>
+                                <DataGridTextColumn Header="Amount" Binding="{Binding Amount}" Width="100"/>
+                                <DataGridTextColumn Header="Method" Binding="{Binding PaymentMethod}" Width="110"/>
+                                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100"/>
+                                <DataGridTemplateColumn Header="Actions" Width="140">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Button Content="Edit" Tag="{Binding}" Click="EditButton_Click" Margin="0,0,6,0" Padding="8,3"/>
+                                                <Button Content="Delete" Tag="{Binding}" Click="DeleteButton_Click" Padding="8,3"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

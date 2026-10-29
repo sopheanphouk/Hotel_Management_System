@@ -1,0 +1,118 @@
+<UserControl x:Class="Dashboard_WPF.RolesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#F5F7FB">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24">
+            <TextBlock Text="Roles" FontSize="26" FontWeight="Bold" Foreground="#172554" Margin="0,0,0,6"/>
+            <TextBlock Text="Define staff roles and their permissions." FontSize="13" Foreground="#64748B" Margin="0,0,0,20"/>
+            <Border Background="White" CornerRadius="10" Padding="20">
+                <StackPanel>
+                    <TextBlock Text="Add Role" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,16"/>
+                    <TextBlock Text="Role Name"/>
+                    <TextBox x:Name="RoleNameTextBox" Height="34" Margin="0,6,0,12" Padding="8"/>
+                    <TextBlock Text="Description"/>
+                    <TextBox x:Name="DescriptionTextBox" Height="70" Margin="0,6,0,12" Padding="8" AcceptsReturn="True" TextWrapping="Wrap"/>
+                    <TextBlock Text="Permissions" FontSize="18" FontWeight="SemiBold" Margin="0,4,0,8"/>
+                    <Border BorderBrush="#D9E1EC" BorderThickness="1" CornerRadius="14" Margin="0,0,0,20">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="48"/>
+                                <RowDefinition Height="44"/>
+                                <RowDefinition Height="44"/>
+                                <RowDefinition Height="44"/>
+                                <RowDefinition Height="44"/>
+                                <RowDefinition Height="44"/>
+                                <RowDefinition Height="44"/>
+                            </Grid.RowDefinitions>
+
+                            <Border Grid.Row="0" Grid.ColumnSpan="5" Background="#F1F5F9" CornerRadius="14,14,0,0"/>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Module" FontSize="16" Foreground="#64748B" VerticalAlignment="Center" Margin="18,0,0,0"/>
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="View" FontSize="16" Foreground="#64748B" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Row="0" Grid.Column="2" Text="Add" FontSize="16" Foreground="#64748B" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Row="0" Grid.Column="3" Text="Edit" FontSize="16" Foreground="#64748B" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Row="0" Grid.Column="4" Text="Delete" FontSize="16" Foreground="#64748B" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Rooms" FontSize="16" Foreground="#172554" VerticalAlignment="Center" Margin="18,0,0,0"/>
+                            <CheckBox x:Name="RoomsViewCheckBox" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="RoomsAddCheckBox" Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="RoomsEditCheckBox" Grid.Row="1" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="RoomsDeleteCheckBox" Grid.Row="1" Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Guests" FontSize="16" Foreground="#172554" VerticalAlignment="Center" Margin="18,0,0,0"/>
+                            <CheckBox x:Name="GuestsViewCheckBox" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="GuestsAddCheckBox" Grid.Row="2" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="GuestsEditCheckBox" Grid.Row="2" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="GuestsDeleteCheckBox" Grid.Row="2" Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Reservations" FontSize="16" Foreground="#172554" VerticalAlignment="Center" Margin="18,0,0,0"/>
+                            <CheckBox x:Name="ReservationsViewCheckBox" Grid.Row="3" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="ReservationsAddCheckBox" Grid.Row="3" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="ReservationsEditCheckBox" Grid.Row="3" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="ReservationsDeleteCheckBox" Grid.Row="3" Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Invoices" FontSize="16" Foreground="#172554" VerticalAlignment="Center" Margin="18,0,0,0"/>
+                            <CheckBox x:Name="InvoicesViewCheckBox" Grid.Row="4" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="InvoicesAddCheckBox" Grid.Row="4" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="InvoicesEditCheckBox" Grid.Row="4" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="InvoicesDeleteCheckBox" Grid.Row="4" Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                            <TextBlock Grid.Row="5" Grid.Column="0" Text="Payments" FontSize="16" Foreground="#172554" VerticalAlignment="Center" Margin="18,0,0,0"/>
+                            <CheckBox x:Name="PaymentsViewCheckBox" Grid.Row="5" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="PaymentsAddCheckBox" Grid.Row="5" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="PaymentsEditCheckBox" Grid.Row="5" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="PaymentsDeleteCheckBox" Grid.Row="5" Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                            <TextBlock Grid.Row="6" Grid.Column="0" Text="Staff" FontSize="16" Foreground="#172554" VerticalAlignment="Center" Margin="18,0,0,0"/>
+                            <CheckBox x:Name="StaffViewCheckBox" Grid.Row="6" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="StaffAddCheckBox" Grid.Row="6" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="StaffEditCheckBox" Grid.Row="6" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="StaffDeleteCheckBox" Grid.Row="6" Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Clear" Width="100" Height="38" Margin="0,0,10,0" Click="ClearButton_Click"/>
+                        <Button Content="Save Role" Width="130" Height="38" Background="#2563EB" Foreground="White" FontWeight="SemiBold" BorderThickness="0" Click="SaveButton_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Background="White" CornerRadius="10" Padding="20" Margin="0,20,0,0">
+                <StackPanel>
+                    <TextBlock Text="Roles Table" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,16"/>
+                    <DataGrid ItemsSource="{Binding Roles}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              CanUserAddRows="False"
+                              MinHeight="160"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60"/>
+                            <DataGridTextColumn Header="Role Name" Binding="{Binding RoleName}" Width="160"/>
+                            <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*"/>
+                            <DataGridTextColumn Header="Permissions" Binding="{Binding Permissions}" Width="2*"/>
+                            <DataGridTemplateColumn Header="Actions" Width="140">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button Content="Edit" Tag="{Binding}" Click="EditButton_Click" Margin="0,0,6,0" Padding="8,3"/>
+                                            <Button Content="Delete" Tag="{Binding}" Click="DeleteButton_Click" Padding="8,3"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

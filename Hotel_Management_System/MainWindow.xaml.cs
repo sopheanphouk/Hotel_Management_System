@@ -146,6 +146,22 @@ namespace Dashboard_WPF
                     PageContent.Content = new RoomTypesView();
                     break;
 
+                case "Payments":
+                    PageContent.Content = new PaymentsView();
+                    break;
+
+                case "Housekeeping":
+                    PageContent.Content = new HousekeepingView();
+                    break;
+
+                case "Staff":
+                    PageContent.Content = new StaffView();
+                    break;
+
+                case "Roles":
+                    PageContent.Content = new RolesView();
+                    break;
+
                 case "Dashboard":
                     PageContent.Content = null;
                     break;
