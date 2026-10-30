@@ -2,6 +2,8 @@ using System;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using Dashboard_WPF.Database;
+using MySqlConnector;
 
 namespace Dashboard_WPF
 {
@@ -9,99 +11,93 @@ namespace Dashboard_WPF
     {
         public ObservableCollection<PaymentRow> Payments { get; } = new();
         private PaymentRow? _editingPayment;
-        private string _selectedPaymentMethod = "Cash";
 
         public PaymentsView()
         {
             InitializeComponent();
             DataContext = this;
-            PaymentDatePicker.SelectedDate = DateTime.Today;
-            StatusComboBox.SelectedIndex = 0;
-            SelectPaymentMethod("Cash");
+            PaidAtPicker.SelectedDate = DateTime.Today;
+            _ = LoadPaymentsAsync();
         }
 
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        private async Task LoadPaymentsAsync()
         {
-            if (InvoiceComboBox.SelectedItem == null ||
-                string.IsNullOrWhiteSpace(GuestNameTextBox.Text) ||
-                string.IsNullOrWhiteSpace(BookingReferenceTextBox.Text) ||
-                string.IsNullOrWhiteSpace(AmountTextBox.Text) ||
-                PaymentDatePicker.SelectedDate == null ||
-                StatusComboBox.SelectedItem == null)
+            try
             {
-                MessageBox.Show("Please complete all down payment fields.", "Missing Information", MessageBoxButton.OK, MessageBoxImage.Warning);
+                await using MySqlConnection connection = await DatabaseHelper.OpenConnectionAsync();
+                await using MySqlCommand command = new("SELECT PaymentId, InvoiceId, Amount, PaymentMethod, PaidAt, ReceivedBy FROM Payments ORDER BY PaymentId", connection);
+                await using MySqlDataReader reader = await command.ExecuteReaderAsync();
+
+                Payments.Clear();
+                while (await reader.ReadAsync())
+                {
+                    Payments.Add(new PaymentRow
+                    {
+                        Id = Convert.ToInt32(reader["PaymentId"]),
+                        InvoiceId = reader["InvoiceId"].ToString() ?? string.Empty,
+                        Amount = Convert.ToDecimal(reader["Amount"]).ToString("0.00"),
+                        PaymentMethod = reader["PaymentMethod"].ToString() ?? string.Empty,
+                        PaidAt = Convert.ToDateTime(reader["PaidAt"]),
+                        ReceivedBy = reader["ReceivedBy"].ToString() ?? string.Empty
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not load payment records.\n{ex.Message}", "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!int.TryParse(InvoiceIdTextBox.Text.Trim(), out int invoiceId) ||
+                !decimal.TryParse(AmountTextBox.Text.Trim(), out decimal amount) ||
+                !int.TryParse(ReceivedByTextBox.Text.Trim(), out int receivedBy) ||
+                PaymentMethodComboBox.SelectedItem == null ||
+                PaidAtPicker.SelectedDate == null)
+            {
+                MessageBox.Show("Please enter valid Invoice ID, Amount, and Received By values.", "Missing Information", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            PaymentRow payment = new()
+            try
             {
-                InvoiceNumber = ((ComboBoxItem)InvoiceComboBox.SelectedItem).Content.ToString() ?? string.Empty,
-                GuestName = GuestNameTextBox.Text.Trim(),
-                BookingReference = BookingReferenceTextBox.Text.Trim(),
-                Amount = AmountTextBox.Text.Trim(),
-                PaymentMethod = _selectedPaymentMethod,
-                PaymentDate = PaymentDatePicker.SelectedDate.Value,
-                Status = ((ComboBoxItem)StatusComboBox.SelectedItem).Content.ToString() ?? string.Empty,
-                NameOnCard = NameOnCardTextBox.Text.Trim(),
-                CardNumber = CardNumberTextBox.Text.Trim(),
-                Expiry = ExpiryTextBox.Text.Trim(),
-                Cvc = CvcTextBox.Text.Trim(),
-                Notes = NotesTextBox.Text.Trim()
-            };
+                await using MySqlConnection connection = await DatabaseHelper.OpenConnectionAsync();
+                string sql = _editingPayment == null
+                    ? "INSERT INTO Payments (InvoiceId, Amount, PaymentMethod, PaidAt, ReceivedBy) VALUES (@InvoiceId, @Amount, @PaymentMethod, @PaidAt, @ReceivedBy)"
+                    : "UPDATE Payments SET InvoiceId=@InvoiceId, Amount=@Amount, PaymentMethod=@PaymentMethod, PaidAt=@PaidAt, ReceivedBy=@ReceivedBy WHERE PaymentId=@PaymentId";
 
-            if (_editingPayment == null)
-            {
-                payment.Id = Payments.Count + 1;
-                Payments.Add(payment);
-            }
-            else
-            {
-                payment.Id = _editingPayment.Id;
-                Payments[Payments.IndexOf(_editingPayment)] = payment;
-            }
+                await using MySqlCommand command = new(sql, connection);
+                command.Parameters.AddWithValue("@InvoiceId", invoiceId);
+                command.Parameters.AddWithValue("@Amount", amount);
+                command.Parameters.AddWithValue("@PaymentMethod", GetComboBoxValue(PaymentMethodComboBox));
+                command.Parameters.AddWithValue("@PaidAt", PaidAtPicker.SelectedDate.Value);
+                command.Parameters.AddWithValue("@ReceivedBy", receivedBy);
+                if (_editingPayment != null)
+                    command.Parameters.AddWithValue("@PaymentId", _editingPayment.Id);
 
-            MessageBox.Show("Down payment saved successfully.", "Down Payment", MessageBoxButton.OK, MessageBoxImage.Information);
-            ClearFields();
+                await command.ExecuteNonQueryAsync();
+                await LoadPaymentsAsync();
+                MessageBox.Show("Payment saved successfully.", "Payment", MessageBoxButton.OK, MessageBoxImage.Information);
+                ClearFields();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not save the payment.\n{ex.Message}", "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
-        private void ClearButton_Click(object sender, RoutedEventArgs e)
-        {
-            ClearFields();
-        }
+        private void ClearButton_Click(object sender, RoutedEventArgs e) => ClearFields();
 
         private void ClearFields()
         {
             _editingPayment = null;
-            InvoiceComboBox.SelectedIndex = -1;
-            GuestNameTextBox.Clear();
-            BookingReferenceTextBox.Clear();
+            InvoiceIdTextBox.Clear();
             AmountTextBox.Clear();
-            PaymentDatePicker.SelectedDate = null;
-            StatusComboBox.SelectedIndex = 0;
-            NameOnCardTextBox.Clear();
-            CardNumberTextBox.Clear();
-            ExpiryTextBox.Clear();
-            CvcTextBox.Clear();
-            NotesTextBox.Clear();
-            SelectPaymentMethod("Cash");
-            UpdateSummary();
-        }
-
-        private void PaymentMethodButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button && button.Tag is string method)
-                SelectPaymentMethod(method);
-        }
-
-        private void SelectPaymentMethod(string method)
-        {
-            _selectedPaymentMethod = method;
-            CashButton.Background = method == "Cash" ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.LightBlue) : null;
-            CreditCardButton.Background = method == "Credit Card" ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.LightBlue) : null;
-            BankTransferButton.Background = method == "Bank Transfer" ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.LightBlue) : null;
-            QrPayButton.Background = method == "QR Pay" ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.LightBlue) : null;
-            CardDetailsPanel.Visibility = method == "Credit Card" ? Visibility.Visible : Visibility.Collapsed;
-            QrDetailsPanel.Visibility = method == "QR Pay" ? Visibility.Visible : Visibility.Collapsed;
+            PaymentMethodComboBox.SelectedIndex = -1;
+            PaidAtPicker.SelectedDate = DateTime.Today;
+            ReceivedByTextBox.Clear();
+            UpdateReceipt();
         }
 
         private void EditButton_Click(object sender, RoutedEventArgs e)
@@ -110,42 +106,47 @@ namespace Dashboard_WPF
                 return;
 
             _editingPayment = payment;
-            SelectComboBoxItem(InvoiceComboBox, payment.InvoiceNumber);
-            GuestNameTextBox.Text = payment.GuestName;
-            BookingReferenceTextBox.Text = payment.BookingReference;
+            InvoiceIdTextBox.Text = payment.InvoiceId;
             AmountTextBox.Text = payment.Amount;
-            SelectPaymentMethod(payment.PaymentMethod);
-            PaymentDatePicker.SelectedDate = payment.PaymentDate;
-            SelectComboBoxItem(StatusComboBox, payment.Status);
-            NameOnCardTextBox.Text = payment.NameOnCard;
-            CardNumberTextBox.Text = payment.CardNumber;
-            ExpiryTextBox.Text = payment.Expiry;
-            CvcTextBox.Text = payment.Cvc;
-            NotesTextBox.Text = payment.Notes;
-            UpdateSummary();
+            SelectComboBoxItem(PaymentMethodComboBox, payment.PaymentMethod);
+            PaidAtPicker.SelectedDate = payment.PaidAt;
+            ReceivedByTextBox.Text = payment.ReceivedBy;
+            UpdateReceipt();
         }
 
-        private void UpdateSummary()
-        {
-            SummaryInvoiceText.Text = InvoiceComboBox.SelectedItem is ComboBoxItem invoice ? invoice.Content?.ToString() : "[Invoice no.]";
-            SummaryGuestText.Text = string.IsNullOrWhiteSpace(GuestNameTextBox.Text) ? "[Guest name]" : GuestNameTextBox.Text.Trim();
-            SummaryPaymentText.Text = string.IsNullOrWhiteSpace(AmountTextBox.Text) ? "0.00" : AmountTextBox.Text.Trim();
-            SummaryBalanceText.Text = SummaryPaymentText.Text;
-        }
-
-        private void DeleteButton_Click(object sender, RoutedEventArgs e)
+        private async void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not Button button || button.Tag is not PaymentRow payment)
                 return;
 
-            if (MessageBox.Show("Delete this down payment?", "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            if (MessageBox.Show("Delete this payment?", "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                 return;
 
-            Payments.Remove(payment);
-            ReassignIds();
-            if (ReferenceEquals(_editingPayment, payment))
-                ClearFields();
+            try
+            {
+                await using MySqlConnection connection = await DatabaseHelper.OpenConnectionAsync();
+                await using MySqlCommand command = new("DELETE FROM Payments WHERE PaymentId=@PaymentId", connection);
+                command.Parameters.AddWithValue("@PaymentId", payment.Id);
+                await command.ExecuteNonQueryAsync();
+                await LoadPaymentsAsync();
+                if (ReferenceEquals(_editingPayment, payment))
+                    ClearFields();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not delete the payment.\n{ex.Message}", "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
+
+        private void UpdateReceipt()
+        {
+            ReceiptInvoiceIdText.Text = string.IsNullOrWhiteSpace(InvoiceIdTextBox.Text) ? "[Invoice ID]" : InvoiceIdTextBox.Text.Trim();
+            ReceiptAmountText.Text = string.IsNullOrWhiteSpace(AmountTextBox.Text) ? "0.00" : AmountTextBox.Text.Trim();
+            ReceiptMethodText.Text = PaymentMethodComboBox.SelectedItem is ComboBoxItem item ? item.Content?.ToString() : "[Payment method]";
+            ReceiptPaidAtText.Text = PaidAtPicker.SelectedDate?.ToString("d") ?? "[Paid date]";
+        }
+
+        private static string GetComboBoxValue(ComboBox comboBox) => ((ComboBoxItem)comboBox.SelectedItem).Content?.ToString() ?? string.Empty;
 
         private static void SelectComboBoxItem(ComboBox comboBox, string value)
         {
@@ -158,28 +159,15 @@ namespace Dashboard_WPF
                 }
             }
         }
-
-        private void ReassignIds()
-        {
-            for (int i = 0; i < Payments.Count; i++)
-                Payments[i].Id = i + 1;
-        }
     }
 
     public class PaymentRow
     {
         public int Id { get; set; }
-        public string InvoiceNumber { get; set; } = string.Empty;
-        public string GuestName { get; set; } = string.Empty;
-        public string BookingReference { get; set; } = string.Empty;
+        public string InvoiceId { get; set; } = string.Empty;
         public string Amount { get; set; } = string.Empty;
         public string PaymentMethod { get; set; } = string.Empty;
-        public DateTime PaymentDate { get; set; }
-        public string Status { get; set; } = string.Empty;
-        public string NameOnCard { get; set; } = string.Empty;
-        public string CardNumber { get; set; } = string.Empty;
-        public string Expiry { get; set; } = string.Empty;
-        public string Cvc { get; set; } = string.Empty;
-        public string Notes { get; set; } = string.Empty;
+        public DateTime PaidAt { get; set; }
+        public string ReceivedBy { get; set; } = string.Empty;
     }
 }

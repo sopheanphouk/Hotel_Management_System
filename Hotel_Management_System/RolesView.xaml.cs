@@ -1,7 +1,8 @@
 using System.Collections.ObjectModel;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using Dashboard_WPF.Database;
+using MySqlConnector;
 
 namespace Dashboard_WPF
 {
@@ -14,52 +15,73 @@ namespace Dashboard_WPF
         {
             InitializeComponent();
             DataContext = this;
+            _ = LoadRolesAsync();
         }
 
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        private async Task LoadRolesAsync()
         {
-            if (string.IsNullOrWhiteSpace(RoleNameTextBox.Text) ||
-                string.IsNullOrWhiteSpace(DescriptionTextBox.Text) ||
-                string.IsNullOrWhiteSpace(BuildPermissions()))
+            try
             {
-                MessageBox.Show("Please complete all role fields.", "Missing Information", MessageBoxButton.OK, MessageBoxImage.Warning);
+                await using MySqlConnection connection = await DatabaseHelper.OpenConnectionAsync();
+                await using MySqlCommand command = new("SELECT RoleId, RoleName FROM `Role` ORDER BY RoleId", connection);
+                await using MySqlDataReader reader = await command.ExecuteReaderAsync();
+
+                Roles.Clear();
+                while (await reader.ReadAsync())
+                {
+                    Roles.Add(new RoleRow
+                    {
+                        RoleId = reader["RoleId"].ToString() ?? string.Empty,
+                        RoleName = reader["RoleName"].ToString() ?? string.Empty
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not load roles.\n{ex.Message}", "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!int.TryParse(RoleIdTextBox.Text.Trim(), out int roleId) ||
+                string.IsNullOrWhiteSpace(RoleNameTextBox.Text))
+            {
+                MessageBox.Show("Please enter a valid Role ID and Role Name.", "Missing Information", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            RoleRow role = new()
+            try
             {
-                RoleName = RoleNameTextBox.Text.Trim(),
-                Description = DescriptionTextBox.Text.Trim(),
-                Permissions = BuildPermissions()
-            };
+                await using MySqlConnection connection = await DatabaseHelper.OpenConnectionAsync();
+                string sql = _editingRole == null
+                    ? "INSERT INTO `Role` (RoleId, RoleName) VALUES (@RoleId, @RoleName)"
+                    : "UPDATE `Role` SET RoleId=@RoleId, RoleName=@RoleName WHERE RoleId=@OriginalRoleId";
 
-            if (_editingRole == null)
-            {
-                role.Id = Roles.Count + 1;
-                Roles.Add(role);
-            }
-            else
-            {
-                role.Id = _editingRole.Id;
-                Roles[Roles.IndexOf(_editingRole)] = role;
-            }
+                await using MySqlCommand command = new(sql, connection);
+                command.Parameters.AddWithValue("@RoleId", roleId);
+                command.Parameters.AddWithValue("@RoleName", RoleNameTextBox.Text.Trim());
+                if (_editingRole != null)
+                    command.Parameters.AddWithValue("@OriginalRoleId", _editingRole.RoleId);
 
-            MessageBox.Show("Role saved successfully.", "Roles", MessageBoxButton.OK, MessageBoxImage.Information);
-            ClearFields();
+                await command.ExecuteNonQueryAsync();
+                await LoadRolesAsync();
+                MessageBox.Show("Role saved successfully.", "Roles", MessageBoxButton.OK, MessageBoxImage.Information);
+                ClearFields();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not save the role.\n{ex.Message}", "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
-        private void ClearButton_Click(object sender, RoutedEventArgs e)
-        {
-            ClearFields();
-        }
+        private void ClearButton_Click(object sender, RoutedEventArgs e) => ClearFields();
 
         private void ClearFields()
         {
             _editingRole = null;
+            RoleIdTextBox.Clear();
             RoleNameTextBox.Clear();
-            DescriptionTextBox.Clear();
-            foreach (CheckBox checkBox in GetPermissionCheckBoxes())
-                checkBox.IsChecked = false;
         }
 
         private void EditButton_Click(object sender, RoutedEventArgs e)
@@ -68,12 +90,11 @@ namespace Dashboard_WPF
                 return;
 
             _editingRole = role;
+            RoleIdTextBox.Text = role.RoleId;
             RoleNameTextBox.Text = role.RoleName;
-            DescriptionTextBox.Text = role.Description;
-            SetPermissions(role.Permissions);
         }
 
-        private void DeleteButton_Click(object sender, RoutedEventArgs e)
+        private async void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not Button button || button.Tag is not RoleRow role)
                 return;
@@ -81,145 +102,26 @@ namespace Dashboard_WPF
             if (MessageBox.Show("Delete this role?", "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                 return;
 
-            Roles.Remove(role);
-            ReassignIds();
-            if (ReferenceEquals(_editingRole, role))
-                ClearFields();
-        }
-
-        private void SetPermissions(string permissions)
-        {
-            foreach (CheckBox checkBox in GetPermissionCheckBoxes())
-                checkBox.IsChecked = false;
-
-            foreach (string modulePermissions in permissions.Split(';', System.StringSplitOptions.RemoveEmptyEntries))
+            try
             {
-                string[] parts = modulePermissions.Split(':', 2);
-                if (parts.Length != 2)
-                    continue;
-
-                string module = parts[0].Trim();
-                string[] actions = parts[1].Split(',', System.StringSplitOptions.RemoveEmptyEntries);
-                SetModulePermissions(module, actions);
+                await using MySqlConnection connection = await DatabaseHelper.OpenConnectionAsync();
+                await using MySqlCommand command = new("DELETE FROM `Role` WHERE RoleId=@RoleId", connection);
+                command.Parameters.AddWithValue("@RoleId", role.RoleId);
+                await command.ExecuteNonQueryAsync();
+                await LoadRolesAsync();
+                if (ReferenceEquals(_editingRole, role))
+                    ClearFields();
             }
-        }
-
-        private void SetModulePermissions(string module, string[] actions)
-        {
-            CheckBox? view = null;
-            CheckBox? add = null;
-            CheckBox? edit = null;
-            CheckBox? delete = null;
-
-            switch (module)
+            catch (Exception ex)
             {
-                case "Rooms":
-                    view = RoomsViewCheckBox; add = RoomsAddCheckBox; edit = RoomsEditCheckBox; delete = RoomsDeleteCheckBox;
-                    break;
-                case "Guests":
-                    view = GuestsViewCheckBox; add = GuestsAddCheckBox; edit = GuestsEditCheckBox; delete = GuestsDeleteCheckBox;
-                    break;
-                case "Reservations":
-                    view = ReservationsViewCheckBox; add = ReservationsAddCheckBox; edit = ReservationsEditCheckBox; delete = ReservationsDeleteCheckBox;
-                    break;
-                case "Invoices":
-                    view = InvoicesViewCheckBox; add = InvoicesAddCheckBox; edit = InvoicesEditCheckBox; delete = InvoicesDeleteCheckBox;
-                    break;
-                case "Payments":
-                    view = PaymentsViewCheckBox; add = PaymentsAddCheckBox; edit = PaymentsEditCheckBox; delete = PaymentsDeleteCheckBox;
-                    break;
-                case "Staff":
-                    view = StaffViewCheckBox; add = StaffAddCheckBox; edit = StaffEditCheckBox; delete = StaffDeleteCheckBox;
-                    break;
+                MessageBox.Show($"Could not delete the role.\n{ex.Message}", "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-
-            if (view == null)
-                return;
-
-            view.IsChecked = ArrayContains(actions, "View");
-            add!.IsChecked = ArrayContains(actions, "Add");
-            edit!.IsChecked = ArrayContains(actions, "Edit");
-            delete!.IsChecked = ArrayContains(actions, "Delete");
-        }
-
-        private static bool ArrayContains(string[] values, string value)
-        {
-            foreach (string item in values)
-            {
-                if (item.Trim() == value)
-                    return true;
-            }
-
-            return false;
-        }
-
-        private void ReassignIds()
-        {
-            for (int i = 0; i < Roles.Count; i++)
-                Roles[i].Id = i + 1;
-        }
-
-        private string BuildPermissions()
-        {
-            List<string> permissions = new();
-            AddModulePermissions(permissions, "Rooms", RoomsViewCheckBox, RoomsAddCheckBox, RoomsEditCheckBox, RoomsDeleteCheckBox);
-            AddModulePermissions(permissions, "Guests", GuestsViewCheckBox, GuestsAddCheckBox, GuestsEditCheckBox, GuestsDeleteCheckBox);
-            AddModulePermissions(permissions, "Reservations", ReservationsViewCheckBox, ReservationsAddCheckBox, ReservationsEditCheckBox, ReservationsDeleteCheckBox);
-            AddModulePermissions(permissions, "Invoices", InvoicesViewCheckBox, InvoicesAddCheckBox, InvoicesEditCheckBox, InvoicesDeleteCheckBox);
-            AddModulePermissions(permissions, "Payments", PaymentsViewCheckBox, PaymentsAddCheckBox, PaymentsEditCheckBox, PaymentsDeleteCheckBox);
-            AddModulePermissions(permissions, "Staff", StaffViewCheckBox, StaffAddCheckBox, StaffEditCheckBox, StaffDeleteCheckBox);
-            return string.Join("; ", permissions);
-        }
-
-        private static void AddModulePermissions(List<string> permissions, string module, params CheckBox[] checkBoxes)
-        {
-            string[] names = { "View", "Add", "Edit", "Delete" };
-            List<string> selected = new();
-
-            for (int i = 0; i < checkBoxes.Length; i++)
-            {
-                if (checkBoxes[i].IsChecked == true)
-                    selected.Add(names[i]);
-            }
-
-            if (selected.Count > 0)
-                permissions.Add($"{module}: {string.Join(", ", selected)}");
-        }
-
-        private IEnumerable<CheckBox> GetPermissionCheckBoxes()
-        {
-            yield return RoomsViewCheckBox;
-            yield return RoomsAddCheckBox;
-            yield return RoomsEditCheckBox;
-            yield return RoomsDeleteCheckBox;
-            yield return GuestsViewCheckBox;
-            yield return GuestsAddCheckBox;
-            yield return GuestsEditCheckBox;
-            yield return GuestsDeleteCheckBox;
-            yield return ReservationsViewCheckBox;
-            yield return ReservationsAddCheckBox;
-            yield return ReservationsEditCheckBox;
-            yield return ReservationsDeleteCheckBox;
-            yield return InvoicesViewCheckBox;
-            yield return InvoicesAddCheckBox;
-            yield return InvoicesEditCheckBox;
-            yield return InvoicesDeleteCheckBox;
-            yield return PaymentsViewCheckBox;
-            yield return PaymentsAddCheckBox;
-            yield return PaymentsEditCheckBox;
-            yield return PaymentsDeleteCheckBox;
-            yield return StaffViewCheckBox;
-            yield return StaffAddCheckBox;
-            yield return StaffEditCheckBox;
-            yield return StaffDeleteCheckBox;
         }
     }
 
     public class RoleRow
     {
-        public int Id { get; set; }
+        public string RoleId { get; set; } = string.Empty;
         public string RoleName { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public string Permissions { get; set; } = string.Empty;
     }
 }

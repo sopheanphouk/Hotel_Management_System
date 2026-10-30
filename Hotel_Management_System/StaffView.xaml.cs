@@ -1,10 +1,9 @@
-using System.Collections.ObjectModel;
 using System;
-using System.IO;
-using Microsoft.Win32;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media.Imaging;
+using Dashboard_WPF.Database;
+using MySqlConnector;
 
 namespace Dashboard_WPF
 {
@@ -17,71 +16,96 @@ namespace Dashboard_WPF
         {
             InitializeComponent();
             DataContext = this;
+            CreatedAtPicker.SelectedDate = DateTime.Today;
+            _ = LoadStaffAsync();
         }
 
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        private async Task LoadStaffAsync()
         {
-            if (string.IsNullOrWhiteSpace(FullNameTextBox.Text) ||
-                RoleComboBox.SelectedItem == null ||
-                string.IsNullOrWhiteSpace(PhoneTextBox.Text) ||
-                string.IsNullOrWhiteSpace(EmailTextBox.Text) ||
-                DateOfBirthPicker.SelectedDate == null ||
-                GetSelectedGender() == null ||
-                string.IsNullOrWhiteSpace(PlaceTextBox.Text) ||
-                string.IsNullOrWhiteSpace(ProfileTextBox.Text))
+            try
             {
-                MessageBox.Show("Please complete all staff fields.", "Missing Information", MessageBoxButton.OK, MessageBoxImage.Warning);
+                await using MySqlConnection connection = await DatabaseHelper.OpenConnectionAsync();
+                await using MySqlCommand command = new("SELECT StaffId, FullName, Username, PasswordHash, RoleId, IsActive, CreatedAt FROM Staff ORDER BY StaffId", connection);
+                await using MySqlDataReader reader = await command.ExecuteReaderAsync();
+
+                StaffMembers.Clear();
+                while (await reader.ReadAsync())
+                {
+                    StaffMembers.Add(new StaffRow
+                    {
+                        Id = Convert.ToInt32(reader["StaffId"]),
+                        FullName = reader["FullName"].ToString() ?? string.Empty,
+                        Username = reader["Username"].ToString() ?? string.Empty,
+                        PasswordHash = reader["PasswordHash"].ToString() ?? string.Empty,
+                        RoleId = reader["RoleId"].ToString() ?? string.Empty,
+                        IsActive = Convert.ToBoolean(reader["IsActive"]),
+                        CreatedAt = Convert.ToDateTime(reader["CreatedAt"])
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not load staff records.\n{ex.Message}", "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!int.TryParse(RoleIdTextBox.Text.Trim(), out int roleId) ||
+                string.IsNullOrWhiteSpace(FullNameTextBox.Text) ||
+                string.IsNullOrWhiteSpace(UsernameTextBox.Text) ||
+                string.IsNullOrWhiteSpace(PasswordHashTextBox.Text) ||
+                CreatedAtPicker.SelectedDate == null)
+            {
+                MessageBox.Show("Please complete the staff fields with a valid Role ID.", "Missing Information", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            StaffRow staff = new()
+            try
             {
-                FullName = FullNameTextBox.Text.Trim(),
-                Role = ((ComboBoxItem)RoleComboBox.SelectedItem).Content.ToString() ?? string.Empty,
-                Phone = PhoneTextBox.Text.Trim(),
-                Email = EmailTextBox.Text.Trim(),
-                DateOfBirth = DateOfBirthPicker.SelectedDate.Value,
-                Gender = GetSelectedGender()!,
-                Place = PlaceTextBox.Text.Trim(),
-                PhotoPath = PhotoPathText.Text,
-                Profile = ProfileTextBox.Text.Trim()
-            };
+                await using MySqlConnection connection = await DatabaseHelper.OpenConnectionAsync();
+                string sql;
+                if (_editingStaff == null)
+                {
+                    sql = "INSERT INTO Staff (FullName, Username, PasswordHash, RoleId, IsActive, CreatedAt) VALUES (@FullName, @Username, @PasswordHash, @RoleId, @IsActive, @CreatedAt)";
+                }
+                else
+                {
+                    sql = "UPDATE Staff SET FullName=@FullName, Username=@Username, PasswordHash=@PasswordHash, RoleId=@RoleId, IsActive=@IsActive, CreatedAt=@CreatedAt WHERE StaffId=@StaffId";
+                }
 
-            if (_editingStaff == null)
-            {
-                staff.Id = StaffMembers.Count + 1;
-                StaffMembers.Add(staff);
-            }
-            else
-            {
-                staff.Id = _editingStaff.Id;
-                StaffMembers[StaffMembers.IndexOf(_editingStaff)] = staff;
-            }
+                await using MySqlCommand command = new(sql, connection);
+                command.Parameters.AddWithValue("@FullName", FullNameTextBox.Text.Trim());
+                command.Parameters.AddWithValue("@Username", UsernameTextBox.Text.Trim());
+                command.Parameters.AddWithValue("@PasswordHash", PasswordHashTextBox.Text.Trim());
+                command.Parameters.AddWithValue("@RoleId", roleId);
+                command.Parameters.AddWithValue("@IsActive", IsActiveCheckBox.IsChecked == true);
+                command.Parameters.AddWithValue("@CreatedAt", CreatedAtPicker.SelectedDate.Value);
+                if (_editingStaff != null)
+                    command.Parameters.AddWithValue("@StaffId", _editingStaff.Id);
 
-            MessageBox.Show("Staff member saved successfully.", "Staff", MessageBoxButton.OK, MessageBoxImage.Information);
-            ClearFields();
+                await command.ExecuteNonQueryAsync();
+                await LoadStaffAsync();
+                MessageBox.Show("Staff record saved successfully.", "Staff", MessageBoxButton.OK, MessageBoxImage.Information);
+                ClearFields();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not save the staff record.\n{ex.Message}", "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
-        private void ClearButton_Click(object sender, RoutedEventArgs e)
-        {
-            ClearFields();
-        }
+        private void ClearButton_Click(object sender, RoutedEventArgs e) => ClearFields();
 
         private void ClearFields()
         {
             _editingStaff = null;
             FullNameTextBox.Clear();
-            RoleComboBox.SelectedIndex = -1;
-            PhoneTextBox.Clear();
-            EmailTextBox.Clear();
-            DateOfBirthPicker.SelectedDate = null;
-            MaleRadioButton.IsChecked = false;
-            FemaleRadioButton.IsChecked = false;
-            OtherRadioButton.IsChecked = false;
-            PlaceTextBox.Clear();
-            ProfileTextBox.Clear();
-            ProfileImage.Source = null;
-            PhotoPathText.Text = string.Empty;
+            UsernameTextBox.Clear();
+            PasswordHashTextBox.Clear();
+            RoleIdTextBox.Clear();
+            IsActiveCheckBox.IsChecked = true;
+            CreatedAtPicker.SelectedDate = DateTime.Today;
         }
 
         private void EditButton_Click(object sender, RoutedEventArgs e)
@@ -91,96 +115,35 @@ namespace Dashboard_WPF
 
             _editingStaff = staff;
             FullNameTextBox.Text = staff.FullName;
-            SelectComboBoxItem(RoleComboBox, staff.Role);
-            PhoneTextBox.Text = staff.Phone;
-            EmailTextBox.Text = staff.Email;
-            DateOfBirthPicker.SelectedDate = staff.DateOfBirth;
-            MaleRadioButton.IsChecked = staff.Gender == "Male";
-            FemaleRadioButton.IsChecked = staff.Gender == "Female";
-            OtherRadioButton.IsChecked = staff.Gender == "Other";
-            PlaceTextBox.Text = staff.Place;
-            ProfileTextBox.Text = staff.Profile;
-            PhotoPathText.Text = staff.PhotoPath;
-
-            if (!string.IsNullOrWhiteSpace(staff.PhotoPath) && File.Exists(staff.PhotoPath))
-            {
-                BitmapImage image = new();
-                image.BeginInit();
-                image.UriSource = new Uri(staff.PhotoPath);
-                image.CacheOption = BitmapCacheOption.OnLoad;
-                image.EndInit();
-                ProfileImage.Source = image;
-            }
-            else
-            {
-                ProfileImage.Source = null;
-            }
+            UsernameTextBox.Text = staff.Username;
+            PasswordHashTextBox.Text = staff.PasswordHash;
+            RoleIdTextBox.Text = staff.RoleId;
+            IsActiveCheckBox.IsChecked = staff.IsActive;
+            CreatedAtPicker.SelectedDate = staff.CreatedAt;
         }
 
-        private void DeleteButton_Click(object sender, RoutedEventArgs e)
+        private async void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not Button button || button.Tag is not StaffRow staff)
                 return;
 
-            if (MessageBox.Show("Delete this staff member?", "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            if (MessageBox.Show("Delete this staff record?", "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                 return;
 
-            StaffMembers.Remove(staff);
-            ReassignIds();
-            if (ReferenceEquals(_editingStaff, staff))
-                ClearFields();
-        }
-
-        private static void SelectComboBoxItem(ComboBox comboBox, string value)
-        {
-            foreach (ComboBoxItem item in comboBox.Items)
+            try
             {
-                if (item.Content?.ToString() == value)
-                {
-                    comboBox.SelectedItem = item;
-                    return;
-                }
+                await using MySqlConnection connection = await DatabaseHelper.OpenConnectionAsync();
+                await using MySqlCommand command = new("DELETE FROM Staff WHERE StaffId=@StaffId", connection);
+                command.Parameters.AddWithValue("@StaffId", staff.Id);
+                await command.ExecuteNonQueryAsync();
+                await LoadStaffAsync();
+                if (ReferenceEquals(_editingStaff, staff))
+                    ClearFields();
             }
-        }
-
-        private void ReassignIds()
-        {
-            for (int i = 0; i < StaffMembers.Count; i++)
-                StaffMembers[i].Id = i + 1;
-        }
-
-        private void UploadPhotoButton_Click(object sender, RoutedEventArgs e)
-        {
-            OpenFileDialog dialog = new()
+            catch (Exception ex)
             {
-                Title = "Select staff profile photo",
-                Filter = "Image files|*.jpg;*.jpeg;*.png;*.bmp|All files|*.*"
-            };
-
-            if (dialog.ShowDialog() != true)
-                return;
-
-            BitmapImage image = new();
-            image.BeginInit();
-            image.UriSource = new Uri(dialog.FileName);
-            image.CacheOption = BitmapCacheOption.OnLoad;
-            image.EndInit();
-            ProfileImage.Source = image;
-            PhotoPathText.Text = dialog.FileName;
-        }
-
-        private string? GetSelectedGender()
-        {
-            if (MaleRadioButton.IsChecked == true)
-                return "Male";
-
-            if (FemaleRadioButton.IsChecked == true)
-                return "Female";
-
-            if (OtherRadioButton.IsChecked == true)
-                return "Other";
-
-            return null;
+                MessageBox.Show($"Could not delete the staff record.\n{ex.Message}", "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 
@@ -188,13 +151,10 @@ namespace Dashboard_WPF
     {
         public int Id { get; set; }
         public string FullName { get; set; } = string.Empty;
-        public string Role { get; set; } = string.Empty;
-        public string Phone { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public DateTime DateOfBirth { get; set; }
-        public string Gender { get; set; } = string.Empty;
-        public string Place { get; set; } = string.Empty;
-        public string PhotoPath { get; set; } = string.Empty;
-        public string Profile { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
+        public string PasswordHash { get; set; } = string.Empty;
+        public string RoleId { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 }

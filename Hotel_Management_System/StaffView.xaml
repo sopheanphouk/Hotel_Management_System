@@ -5,95 +5,39 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="24">
             <TextBlock Text="Staff" FontSize="26" FontWeight="Bold" Foreground="#172554" Margin="0,0,0,6"/>
-            <TextBlock Text="Add and manage hotel staff members." FontSize="13" Foreground="#64748B" Margin="0,0,0,20"/>
+            <TextBlock Text="Manage staff records and account status." FontSize="13" Foreground="#64748B" Margin="0,0,0,20"/>
             <Border Background="White" CornerRadius="10" Padding="20">
                 <StackPanel>
-                    <TextBlock Text="Add Staff Member" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,16"/>
-
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
-                        <Border Width="88" Height="88" Background="#E5E7EB" CornerRadius="44" Margin="0,0,16,0">
-                            <Image x:Name="ProfileImage" Stretch="UniformToFill"/>
-                        </Border>
-                        <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="Profile Photo" FontSize="16" FontWeight="SemiBold"/>
-                            <Button Content="Upload photo" Width="130" Height="36" Margin="0,8,0,0" Click="UploadPhotoButton_Click"/>
-                            <TextBlock x:Name="PhotoPathText" Width="260" TextTrimming="CharacterEllipsis" Foreground="#64748B" FontSize="11" Margin="0,5,0,0"/>
-                        </StackPanel>
-                    </StackPanel>
-
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="20"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-
-                        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,12">
-                            <TextBlock Text="Name" FontWeight="SemiBold"/>
-                            <TextBox x:Name="FullNameTextBox" Height="34" Margin="0,6,0,0" Padding="8"/>
-                        </StackPanel>
-                        <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,0,12">
-                            <TextBlock Text="Date of Birth" FontWeight="SemiBold"/>
-                            <DatePicker x:Name="DateOfBirthPicker" Height="34" Margin="0,6,0,0"/>
-                        </StackPanel>
-                        <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,0,12">
-                            <TextBlock Text="Gender" FontWeight="SemiBold"/>
-                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                                <RadioButton x:Name="MaleRadioButton" Content="Male" GroupName="Gender" Margin="0,0,20,0"/>
-                                <RadioButton x:Name="FemaleRadioButton" Content="Female" GroupName="Gender" Margin="0,0,20,0"/>
-                                <RadioButton x:Name="OtherRadioButton" Content="Other" GroupName="Gender"/>
-                            </StackPanel>
-                        </StackPanel>
-                        <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,0,12">
-                            <TextBlock Text="Place" FontWeight="SemiBold"/>
-                            <TextBox x:Name="PlaceTextBox" Height="34" Margin="0,6,0,0" Padding="8"/>
-                        </StackPanel>
-                    </Grid>
-
-                    <TextBlock Text="Role"/>
-                    <ComboBox x:Name="RoleComboBox" Height="34" Margin="0,6,0,12" Padding="8">
-                        <ComboBoxItem Content="Manager"/>
-                        <ComboBoxItem Content="Receptionist"/>
-                        <ComboBoxItem Content="Housekeeper"/>
-                        <ComboBoxItem Content="Accountant"/>
-                    </ComboBox>
-                    <TextBlock Text="Phone Number"/>
-                    <TextBox x:Name="PhoneTextBox" Height="34" Margin="0,6,0,12" Padding="8"/>
-                    <TextBlock Text="Email Address"/>
-                    <TextBox x:Name="EmailTextBox" Height="34" Margin="0,6,0,12" Padding="8"/>
-                    <TextBlock Text="Profile Details"/>
-                    <TextBox x:Name="ProfileTextBox" Height="70" Margin="0,6,0,20" Padding="8" AcceptsReturn="True" TextWrapping="Wrap"/>
+                    <TextBlock Text="Add Staff" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,16"/>
+                    <TextBlock Text="Full Name"/>
+                    <TextBox x:Name="FullNameTextBox" Height="34" Margin="0,6,0,12" Padding="8"/>
+                    <TextBlock Text="Username"/>
+                    <TextBox x:Name="UsernameTextBox" Height="34" Margin="0,6,0,12" Padding="8"/>
+                    <TextBlock Text="Password Hash"/>
+                    <TextBox x:Name="PasswordHashTextBox" Height="34" Margin="0,6,0,12" Padding="8"/>
+                    <TextBlock Text="Role ID"/>
+                    <TextBox x:Name="RoleIdTextBox" Height="34" Margin="0,6,0,12" Padding="8"/>
+                    <CheckBox x:Name="IsActiveCheckBox" Content="Is Active" IsChecked="True" Margin="0,0,0,12"/>
+                    <TextBlock Text="Created At"/>
+                    <DatePicker x:Name="CreatedAtPicker" Height="34" Margin="0,6,0,20"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Content="Clear" Width="100" Height="38" Margin="0,0,10,0" Click="ClearButton_Click"/>
                         <Button Content="Save Staff" Width="130" Height="38" Background="#2563EB" Foreground="White" FontWeight="SemiBold" BorderThickness="0" Click="SaveButton_Click"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
-
             <Border Background="White" CornerRadius="10" Padding="20" Margin="0,20,0,0">
                 <StackPanel>
                     <TextBlock Text="Staff Table" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,16"/>
-                    <DataGrid ItemsSource="{Binding StaffMembers}"
-                              AutoGenerateColumns="False"
-                              IsReadOnly="True"
-                              CanUserAddRows="False"
-                              MinHeight="160"
-                              HeadersVisibility="Column"
-                              GridLinesVisibility="Horizontal">
+                    <DataGrid ItemsSource="{Binding StaffMembers}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" MinHeight="160" HeadersVisibility="Column" GridLinesVisibility="Horizontal">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60"/>
+                            <DataGridTextColumn Header="Staff ID" Binding="{Binding Id}" Width="70"/>
                             <DataGridTextColumn Header="Full Name" Binding="{Binding FullName}" Width="*"/>
-                            <DataGridTextColumn Header="Role" Binding="{Binding Role}" Width="140"/>
-                            <DataGridTextColumn Header="Phone" Binding="{Binding Phone}" Width="140"/>
-                            <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="*"/>
-                            <DataGridTextColumn Header="Date of Birth" Binding="{Binding DateOfBirth, StringFormat=d}" Width="120"/>
-                            <DataGridTextColumn Header="Gender" Binding="{Binding Gender}" Width="100"/>
-                            <DataGridTextColumn Header="Place" Binding="{Binding Place}" Width="140"/>
-                            <DataGridTextColumn Header="Profile Details" Binding="{Binding Profile}" Width="2*"/>
+                            <DataGridTextColumn Header="Username" Binding="{Binding Username}" Width="140"/>
+                            <DataGridTextColumn Header="Password Hash" Binding="{Binding PasswordHash}" Width="160"/>
+                            <DataGridTextColumn Header="Role ID" Binding="{Binding RoleId}" Width="80"/>
+                            <DataGridCheckBoxColumn Header="Is Active" Binding="{Binding IsActive}" Width="90"/>
+                            <DataGridTextColumn Header="Created At" Binding="{Binding CreatedAt, StringFormat=d}" Width="110"/>
                             <DataGridTemplateColumn Header="Actions" Width="140">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
